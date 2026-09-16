@@ -1,0 +1,381 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Saída de MDF - Oriente Móveis</title>
+<link href="https://fonts.googleapis.com/css2?family=Afacad:wght@400;600;700&family=Josefin+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --vermelho: #C1121F;
+    --cinza: #3F3F3F;
+    --branco: #FFFFFF;
+    --fundo: #F5F5F5;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    font-family: 'Afacad', sans-serif;
+    background: var(--fundo);
+    color: var(--cinza);
+  }
+  header {
+    background: var(--vermelho);
+    color: var(--branco);
+    padding: 20px 24px;
+  }
+  header h1 {
+    font-family: 'Josefin Sans', sans-serif;
+    font-size: 22px;
+    margin: 0;
+    letter-spacing: 0.5px;
+  }
+  header p {
+    margin: 4px 0 0;
+    font-size: 13px;
+    opacity: 0.9;
+  }
+  main {
+    max-width: 720px;
+    margin: 0 auto;
+    padding: 20px 16px 60px;
+  }
+  .card {
+    background: var(--branco);
+    border-radius: 10px;
+    padding: 18px;
+    margin-bottom: 20px;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.08);
+  }
+  .card h2 {
+    font-family: 'Josefin Sans', sans-serif;
+    font-size: 16px;
+    margin: 0 0 14px;
+    color: var(--vermelho);
+  }
+  label {
+    display: block;
+    font-size: 13px;
+    font-weight: 600;
+    margin-bottom: 4px;
+    margin-top: 12px;
+  }
+  label:first-of-type { margin-top: 0; }
+  input, select {
+    width: 100%;
+    padding: 10px;
+    border: 1px solid #ddd;
+    border-radius: 6px;
+    font-family: 'Afacad', sans-serif;
+    font-size: 15px;
+    background: var(--branco);
+  }
+  input:focus, select:focus {
+    outline: none;
+    border-color: var(--vermelho);
+  }
+  button {
+    font-family: 'Afacad', sans-serif;
+    cursor: pointer;
+    border: none;
+    border-radius: 6px;
+    font-weight: 600;
+  }
+  .btn-primary {
+    background: var(--vermelho);
+    color: var(--branco);
+    padding: 12px;
+    width: 100%;
+    font-size: 15px;
+    margin-top: 18px;
+  }
+  .btn-primary:disabled { opacity: 0.6; cursor: default; }
+  .btn-primary:hover:not(:disabled) { background: #a10f1a; }
+  .search-row {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 14px;
+  }
+  .search-row input { flex: 1; }
+  .item {
+    border-bottom: 1px solid #eee;
+    padding: 12px 0;
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 10px;
+  }
+  .item:last-child { border-bottom: none; }
+  .item-info { flex: 1; }
+  .item-tipo { font-weight: 700; font-size: 15px; }
+  .item-meta { font-size: 13px; color: #777; margin-top: 2px; }
+  .item-actions { display: flex; gap: 6px; flex-shrink: 0; }
+  .icon-btn {
+    background: var(--fundo);
+    color: var(--cinza);
+    width: 32px;
+    height: 32px;
+    border-radius: 6px;
+    font-size: 14px;
+  }
+  .icon-btn:hover { background: #e6e6e6; }
+  .icon-btn.del:hover { background: #fdd; color: var(--vermelho); }
+  .empty, .loading {
+    text-align: center;
+    color: #999;
+    padding: 30px 0;
+    font-size: 14px;
+  }
+  .toast {
+    position: fixed;
+    bottom: 20px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: var(--cinza);
+    color: var(--branco);
+    padding: 10px 18px;
+    border-radius: 20px;
+    font-size: 14px;
+    opacity: 0;
+    transition: opacity 0.3s;
+    pointer-events: none;
+    z-index: 10;
+  }
+  .toast.show { opacity: 1; }
+  .edit-row { display: flex; gap: 6px; margin-top: 8px; flex-wrap: wrap; }
+  .edit-row input { width: auto; flex: 1; min-width: 90px; }
+  .month-total {
+    font-size: 13px;
+    color: #777;
+    margin-bottom: 10px;
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>Saída de MDF</h1>
+  <p>Oriente Móveis — controle de estoque</p>
+</header>
+
+<main>
+  <div class="card">
+    <h2>Registrar saída</h2>
+    <label for="f-data">Data</label>
+    <input type="date" id="f-data">
+
+    <label for="f-tipo">Tipo de MDF</label>
+    <input type="text" id="f-tipo" list="tipos-mdf" placeholder="ex: Branco TX, Louro Freijó">
+    <datalist id="tipos-mdf"></datalist>
+
+    <label for="f-qtd">Quantidade (chapas)</label>
+    <input type="number" id="f-qtd" min="0" step="1" placeholder="0">
+
+    <label for="f-cliente">Cliente / Projeto</label>
+    <input type="text" id="f-cliente" placeholder="ex: Gustavo Tozzi, cozinha">
+
+    <button class="btn-primary" id="btn-salvar" onclick="salvar()">Registrar saída</button>
+  </div>
+
+  <div class="card">
+    <h2>Saídas lançadas</h2>
+    <div class="search-row">
+      <input type="text" id="busca" placeholder="Buscar por tipo ou cliente..." oninput="renderizar()">
+      <input type="month" id="filtro-mes" onchange="renderizar()">
+    </div>
+    <div class="month-total" id="total-mes"></div>
+    <div id="lista">
+      <div class="loading">Carregando...</div>
+    </div>
+  </div>
+</main>
+
+<div class="toast" id="toast"></div>
+
+<script>
+// ⚠️ SUBSTITUA pela URL do seu Web App do Apps Script (veja instruções)
+const GAS_URL = "https://script.google.com/macros/s/AKfycbwVpvPwkgIdIbbtMviu9EYv4kIlX2PcCp5ZQQnNvKfUYdP0t2K3oRMWq9TculnAAshK/exec";
+
+let registros = [];
+let editandoId = null;
+
+document.getElementById('f-data').valueAsDate = new Date();
+
+function toast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 2200);
+}
+
+async function carregar() {
+  try {
+    const res = await fetch(GAS_URL);
+    registros = await res.json();
+    atualizarTipos();
+    renderizar();
+  } catch (err) {
+    document.getElementById('lista').innerHTML = '<div class="empty">Erro ao carregar. Verifique a conexão ou a URL configurada.</div>';
+  }
+}
+
+function atualizarTipos() {
+  const tipos = [...new Set(registros.map(r => r.tipo).filter(Boolean))];
+  const datalist = document.getElementById('tipos-mdf');
+  datalist.innerHTML = tipos.map(t => `<option value="${escapeHtml(t)}">`).join('');
+}
+
+async function salvar() {
+  const data = document.getElementById('f-data').value;
+  const tipo = document.getElementById('f-tipo').value.trim();
+  const qtd = document.getElementById('f-qtd').value;
+  const cliente = document.getElementById('f-cliente').value.trim();
+
+  if (!data || !tipo || !qtd) {
+    toast('Preencha data, tipo e quantidade');
+    return;
+  }
+
+  const btn = document.getElementById('btn-salvar');
+  btn.disabled = true;
+  btn.textContent = 'Salvando...';
+
+  try {
+    await fetch(GAS_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+      body: JSON.stringify({ action: 'add', data, tipo, quantidade: qtd, cliente })
+    });
+    document.getElementById('f-tipo').value = '';
+    document.getElementById('f-qtd').value = '';
+    document.getElementById('f-cliente').value = '';
+    document.getElementById('f-data').valueAsDate = new Date();
+    toast('Saída registrada!');
+    await carregar();
+  } catch (err) {
+    toast('Erro ao salvar. Tente de novo.');
+  } finally {
+    btn.disabled = false;
+    btn.textContent = 'Registrar saída';
+  }
+}
+
+async function excluir(id) {
+  if (!confirm('Excluir este lançamento?')) return;
+  try {
+    await fetch(GAS_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+      body: JSON.stringify({ action: 'delete', id })
+    });
+    toast('Lançamento excluído');
+    await carregar();
+  } catch (err) {
+    toast('Erro ao excluir');
+  }
+}
+
+function iniciarEdicao(id) {
+  editandoId = id;
+  renderizar();
+}
+
+function cancelarEdicao() {
+  editandoId = null;
+  renderizar();
+}
+
+async function salvarEdicao(id) {
+  const data = document.getElementById('e-data-' + id).value;
+  const tipo = document.getElementById('e-tipo-' + id).value.trim();
+  const qtd = document.getElementById('e-qtd-' + id).value;
+  const cliente = document.getElementById('e-cliente-' + id).value.trim();
+
+  try {
+    await fetch(GAS_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+      body: JSON.stringify({ action: 'edit', id, data, tipo, quantidade: qtd, cliente })
+    });
+    editandoId = null;
+    toast('Lançamento atualizado');
+    await carregar();
+  } catch (err) {
+    toast('Erro ao atualizar');
+  }
+}
+
+function escapeHtml(str) {
+  return String(str).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+
+function formatarData(iso) {
+  if (!iso) return '';
+  const d = new Date(iso);
+  if (isNaN(d)) return iso;
+  return d.toLocaleDateString('pt-BR', { timeZone: 'UTC' });
+}
+
+function renderizar() {
+  const busca = document.getElementById('busca').value.toLowerCase();
+  const mes = document.getElementById('filtro-mes').value; // YYYY-MM
+
+  let filtrados = registros.filter(r => {
+    const okBusca = !busca || (r.tipo || '').toLowerCase().includes(busca) || (r.cliente || '').toLowerCase().includes(busca);
+    const okMes = !mes || (r.data || '').toString().startsWith(mes);
+    return okBusca && okMes;
+  });
+
+  filtrados.sort((a, b) => (b.data || '').localeCompare(a.data || ''));
+
+  const totalDiv = document.getElementById('total-mes');
+  if (mes) {
+    const total = filtrados.reduce((s, r) => s + (Number(r.quantidade) || 0), 0);
+    totalDiv.textContent = `Total no período: ${total} chapa(s) em ${filtrados.length} lançamento(s)`;
+  } else {
+    totalDiv.textContent = `${registros.length} lançamento(s) no total`;
+  }
+
+  const lista = document.getElementById('lista');
+  if (filtrados.length === 0) {
+    lista.innerHTML = '<div class="empty">Nenhuma saída encontrada.</div>';
+    return;
+  }
+
+  lista.innerHTML = filtrados.map(r => {
+    if (editandoId === r.id) {
+      return `
+        <div class="item">
+          <div class="item-info" style="width:100%">
+            <div class="edit-row">
+              <input type="date" id="e-data-${r.id}" value="${r.data}">
+              <input type="text" id="e-tipo-${r.id}" value="${escapeHtml(r.tipo)}" placeholder="Tipo">
+              <input type="number" id="e-qtd-${r.id}" value="${r.quantidade}" placeholder="Qtd">
+              <input type="text" id="e-cliente-${r.id}" value="${escapeHtml(r.cliente)}" placeholder="Cliente/Projeto">
+            </div>
+            <div class="edit-row">
+              <button class="icon-btn" onclick="salvarEdicao('${r.id}')" style="background:var(--vermelho);color:white;flex:1">Salvar</button>
+              <button class="icon-btn" onclick="cancelarEdicao()" style="flex:1">Cancelar</button>
+            </div>
+          </div>
+        </div>`;
+    }
+    return `
+      <div class="item">
+        <div class="item-info">
+          <div class="item-tipo">${escapeHtml(r.tipo)} — ${r.quantidade} chapa(s)</div>
+          <div class="item-meta">${formatarData(r.data)} • ${escapeHtml(r.cliente || 'sem cliente/projeto')}</div>
+        </div>
+        <div class="item-actions">
+          <button class="icon-btn" onclick="iniciarEdicao('${r.id}')" title="Editar">✎</button>
+          <button class="icon-btn del" onclick="excluir('${r.id}')" title="Excluir">✕</button>
+        </div>
+      </div>`;
+  }).join('');
+}
+
+carregar();
+</script>
+
+</body>
+</html>
