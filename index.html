@@ -161,8 +161,16 @@
 <main>
   <div class="card">
     <h2>Registrar saída</h2>
-    <label for="f-data">Data</label>
-    <input type="date" id="f-data">
+    <div class="edit-row">
+      <div style="flex:1">
+        <label for="f-data">Data</label>
+        <input type="date" id="f-data">
+      </div>
+      <div style="flex:1">
+        <label for="f-hora">Horário</label>
+        <input type="time" id="f-hora">
+      </div>
+    </div>
 
     <label for="f-tipo">Tipo de MDF</label>
     <input type="text" id="f-tipo" list="tipos-mdf" placeholder="ex: Branco TX, Louro Freijó">
@@ -194,12 +202,17 @@
 
 <script>
 // ⚠️ SUBSTITUA pela URL do seu Web App do Apps Script (veja instruções)
-const GAS_URL = "https://script.google.com/macros/s/AKfycbwVpvPwkgIdIbbtMviu9EYv4kIlX2PcCp5ZQQnNvKfUYdP0t2K3oRMWq9TculnAAshK/exec";
+const GAS_URL = https://script.google.com/macros/s/AKfycbz6wUD2jpNWruXZEyOXy3m-NN2o8QdpMMpxXkHrpyHWhrVR_ZGd0zVwi772fIGZUJtg/exec;
 
 let registros = [];
 let editandoId = null;
 
 document.getElementById('f-data').valueAsDate = new Date();
+function horaAtual() {
+  const d = new Date();
+  return String(d.getHours()).padStart(2, '0') + ':' + String(d.getMinutes()).padStart(2, '0');
+}
+document.getElementById('f-hora').value = horaAtual();
 
 function toast(msg) {
   const t = document.getElementById('toast');
@@ -227,6 +240,7 @@ function atualizarTipos() {
 
 async function salvar() {
   const data = document.getElementById('f-data').value;
+  const hora = document.getElementById('f-hora').value;
   const tipo = document.getElementById('f-tipo').value.trim();
   const qtd = document.getElementById('f-qtd').value;
   const cliente = document.getElementById('f-cliente').value.trim();
@@ -244,12 +258,13 @@ async function salvar() {
     await fetch(GAS_URL, {
       method: 'POST',
       headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-      body: JSON.stringify({ action: 'add', data, tipo, quantidade: qtd, cliente })
+      body: JSON.stringify({ action: 'add', data, hora, tipo, quantidade: qtd, cliente })
     });
     document.getElementById('f-tipo').value = '';
     document.getElementById('f-qtd').value = '';
     document.getElementById('f-cliente').value = '';
     document.getElementById('f-data').valueAsDate = new Date();
+    document.getElementById('f-hora').value = horaAtual();
     toast('Saída registrada!');
     await carregar();
   } catch (err) {
@@ -287,6 +302,7 @@ function cancelarEdicao() {
 
 async function salvarEdicao(id) {
   const data = document.getElementById('e-data-' + id).value;
+  const hora = document.getElementById('e-hora-' + id).value;
   const tipo = document.getElementById('e-tipo-' + id).value.trim();
   const qtd = document.getElementById('e-qtd-' + id).value;
   const cliente = document.getElementById('e-cliente-' + id).value.trim();
@@ -295,7 +311,7 @@ async function salvarEdicao(id) {
     await fetch(GAS_URL, {
       method: 'POST',
       headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-      body: JSON.stringify({ action: 'edit', id, data, tipo, quantidade: qtd, cliente })
+      body: JSON.stringify({ action: 'edit', id, data, hora, tipo, quantidade: qtd, cliente })
     });
     editandoId = null;
     toast('Lançamento atualizado');
@@ -349,6 +365,7 @@ function renderizar() {
           <div class="item-info" style="width:100%">
             <div class="edit-row">
               <input type="date" id="e-data-${r.id}" value="${r.data}">
+              <input type="time" id="e-hora-${r.id}" value="${r.hora || ''}">
               <input type="text" id="e-tipo-${r.id}" value="${escapeHtml(r.tipo)}" placeholder="Tipo">
               <input type="number" id="e-qtd-${r.id}" value="${r.quantidade}" placeholder="Qtd">
               <input type="text" id="e-cliente-${r.id}" value="${escapeHtml(r.cliente)}" placeholder="Cliente/Projeto">
@@ -364,7 +381,7 @@ function renderizar() {
       <div class="item">
         <div class="item-info">
           <div class="item-tipo">${escapeHtml(r.tipo)} — ${r.quantidade} chapa(s)</div>
-          <div class="item-meta">${formatarData(r.data)} • ${escapeHtml(r.cliente || 'sem cliente/projeto')}</div>
+          <div class="item-meta">${formatarData(r.data)}${r.hora ? ' às ' + escapeHtml(r.hora) : ''} • ${escapeHtml(r.cliente || 'sem cliente/projeto')}</div>
         </div>
         <div class="item-actions">
           <button class="icon-btn" onclick="iniciarEdicao('${r.id}')" title="Editar">✎</button>
