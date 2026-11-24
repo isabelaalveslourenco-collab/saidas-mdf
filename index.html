@@ -149,6 +149,35 @@
     color: #777;
     margin-bottom: 10px;
   }
+
+  .tabs { display:flex; gap:8px; margin-bottom:16px; }
+  .tab { flex:1; padding:11px; background:var(--branco); color:var(--cinza); border-radius:8px; font-size:15px; box-shadow:0 1px 4px rgba(0,0,0,0.08); }
+  .tab.active { background:var(--vermelho); color:var(--branco); }
+  .dash-head { display:flex; gap:10px; align-items:center; margin-bottom:14px; }
+  .dash-head input { flex:1; }
+  .kpis { display:grid; grid-template-columns:repeat(3,1fr); gap:10px; margin-bottom:20px; }
+  .kpi { background:var(--branco); border-radius:10px; padding:14px 12px; box-shadow:0 1px 4px rgba(0,0,0,0.08); }
+  .kpi .n { font-family:'Josefin Sans',sans-serif; font-size:28px; font-weight:600; line-height:1.1; color:var(--cinza); }
+  .kpi .l { font-size:13px; color:#777; margin-top:4px; }
+  .kpi .d { font-size:12px; color:#777; margin-top:2px; }
+  .chart-sub { font-size:13px; color:#777; margin:-8px 0 12px; }
+  .bars { display:flex; align-items:flex-end; gap:6px; height:170px; border-bottom:1px solid #ddd; padding-top:20px; }
+  .bcol { flex:1; display:flex; flex-direction:column; justify-content:flex-end; align-items:center; height:100%; cursor:pointer; position:relative; }
+  .bcol .bv { font-size:11px; color:var(--cinza); margin-bottom:3px; font-weight:600; }
+  .bcol .bar { width:100%; max-width:34px; background:#cfcfcf; border-radius:4px 4px 0 0; min-height:2px; }
+  .bcol.sel .bar { background:var(--vermelho); }
+  .bcol:hover .bar { background:#e05a63; }
+  .bcol.sel:hover .bar { background:#a10f1a; }
+  .blabels { display:flex; gap:6px; margin-top:6px; }
+  .blabels span { flex:1; text-align:center; font-size:11px; color:#777; }
+  .blabels span.sel { color:var(--vermelho); font-weight:700; }
+  .rank-row { display:grid; grid-template-columns:minmax(90px,38%) 1fr 34px; gap:8px; align-items:center; padding:5px 0; font-size:13px; }
+  .rank-row .rn { overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .rank-row .rt { background:#eee; border-radius:4px; height:10px; }
+  .rank-row .rf { background:var(--vermelho); height:10px; border-radius:4px; }
+  .rank-row .rv { text-align:right; font-weight:600; }
+  .rank-tip { font-size:12px; color:#777; margin-top:8px; }
+  .hidden { display:none; }
 </style>
 </head>
 <body>
@@ -159,6 +188,32 @@
 </header>
 
 <main>
+  <div class="tabs">
+    <button class="tab active" id="tab-registrar" onclick="mostrarAba('registrar')">Registrar</button>
+    <button class="tab" id="tab-dashboard" onclick="mostrarAba('dashboard')">Dashboard por mês</button>
+  </div>
+
+  <div id="aba-dashboard" class="hidden">
+    <div class="dash-head">
+      <input type="month" id="dash-mes" onchange="renderDashboard()">
+    </div>
+    <div class="kpis">
+      <div class="kpi"><div class="n" id="k-chapas">0</div><div class="l">chapas no mês</div><div class="d" id="k-var"></div></div>
+      <div class="kpi"><div class="n" id="k-lanc">0</div><div class="l">lançamentos</div></div>
+      <div class="kpi"><div class="n" id="k-proj">0</div><div class="l">clientes/projetos</div></div>
+    </div>
+    <div class="card">
+      <h2>Chapas por mês</h2>
+      <div class="chart-sub">Últimos 12 meses — toque em uma barra para ver o mês</div>
+      <div class="bars" id="bars"></div>
+      <div class="blabels" id="blabels"></div>
+    </div>
+    <div class="card"><h2>Por tipo de MDF</h2><div id="rank-tipo"></div></div>
+    <div class="card"><h2>Por espessura</h2><div id="rank-esp"></div></div>
+    <div class="card"><h2>Por cliente / projeto</h2><div id="rank-cli"></div></div>
+  </div>
+
+  <div id="aba-registrar">
   <div class="card">
     <h2>Registrar saída</h2>
     <div class="edit-row">
@@ -206,6 +261,7 @@
     <div id="lista">
       <div class="loading">Carregando...</div>
     </div>
+  </div>
   </div>
 </main>
 
@@ -281,6 +337,7 @@ async function carregar() {
     const res = await fetch(GAS_URL + '?t=' + Date.now(), { cache: 'no-store' });
     registros = await res.json();
     renderizar();
+    renderDashboard();
   } catch (err) {
     document.getElementById('lista').innerHTML = '<div class="empty">Erro ao carregar. Verifique a conexão ou a URL configurada.</div>';
   }
@@ -455,6 +512,95 @@ function renderizar() {
         </div>
       </div>`;
   }).join('');
+}
+
+const MESES = ['jan','fev','mar','abr','mai','jun','jul','ago','set','out','nov','dez'];
+const MESES_LONGOS = ['janeiro','fevereiro','março','abril','maio','junho','julho','agosto','setembro','outubro','novembro','dezembro'];
+
+function mesAtual() {
+  const d = new Date();
+  return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0');
+}
+document.getElementById('dash-mes').value = mesAtual();
+
+function mostrarAba(aba) {
+  document.getElementById('aba-registrar').classList.toggle('hidden', aba !== 'registrar');
+  document.getElementById('aba-dashboard').classList.toggle('hidden', aba !== 'dashboard');
+  document.getElementById('tab-registrar').classList.toggle('active', aba === 'registrar');
+  document.getElementById('tab-dashboard').classList.toggle('active', aba === 'dashboard');
+  if (aba === 'dashboard') renderDashboard();
+}
+
+function somaMes(ym) {
+  return registros.filter(r => (r.data || '').toString().startsWith(ym))
+    .reduce((s, r) => s + (Number(r.quantidade) || 0), 0);
+}
+
+function mesesAtras(ym, n) {
+  const [y, m] = ym.split('-').map(Number);
+  const d = new Date(y, m - 1 - n, 1);
+  return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0');
+}
+
+function selecionarMes(ym) {
+  document.getElementById('dash-mes').value = ym;
+  renderDashboard();
+}
+
+function ranking(elId, campo, vazio, limite) {
+  const mes = document.getElementById('dash-mes').value;
+  const mapa = {};
+  registros.filter(r => (r.data || '').toString().startsWith(mes)).forEach(r => {
+    const k = (r[campo] || '').toString().trim() || vazio;
+    mapa[k] = (mapa[k] || 0) + (Number(r.quantidade) || 0);
+  });
+  let itens = Object.entries(mapa).sort((a, b) => b[1] - a[1]);
+  const el = document.getElementById(elId);
+  if (!itens.length) { el.innerHTML = '<div class="empty" style="padding:12px 0">Sem saídas neste mês.</div>'; return; }
+  const extra = limite && itens.length > limite ? itens.length - limite : 0;
+  if (limite) itens = itens.slice(0, limite);
+  const max = itens[0][1] || 1;
+  el.innerHTML = itens.map(([nome, v]) => `
+    <div class="rank-row" title="${escapeHtml(nome)}: ${v} chapa(s)">
+      <div class="rn">${escapeHtml(nome)}</div>
+      <div class="rt"><div class="rf" style="width:${Math.max(2, v / max * 100)}%"></div></div>
+      <div class="rv">${v}</div>
+    </div>`).join('') + (extra ? `<div class="rank-tip">+ ${extra} outro(s) com menos saídas</div>` : '');
+}
+
+function renderDashboard() {
+  const mes = document.getElementById('dash-mes').value || mesAtual();
+  const doMes = registros.filter(r => (r.data || '').toString().startsWith(mes));
+  const total = somaMes(mes);
+  document.getElementById('k-chapas').textContent = total;
+  document.getElementById('k-lanc').textContent = doMes.length;
+  const projetos = new Set(doMes.map(r => (r.cliente || '').trim().toLowerCase()).filter(Boolean));
+  document.getElementById('k-proj').textContent = projetos.size;
+
+  const ant = somaMes(mesesAtras(mes, 1));
+  const kv = document.getElementById('k-var');
+  if (ant > 0) {
+    const pct = Math.round((total - ant) / ant * 100);
+    kv.textContent = (pct > 0 ? '▲ +' : pct < 0 ? '▼ ' : '= ') + pct + '% vs mês anterior';
+  } else {
+    kv.textContent = '';
+  }
+
+  const meses = [];
+  for (let i = 11; i >= 0; i--) meses.push(mesesAtras(mes, i));
+  const vals = meses.map(somaMes);
+  const max = Math.max(...vals, 1);
+  document.getElementById('bars').innerHTML = meses.map((m, i) => `
+    <div class="bcol ${m === mes ? 'sel' : ''}" onclick="selecionarMes('${m}')" title="${MESES_LONGOS[Number(m.slice(5)) - 1]} de ${m.slice(0,4)}: ${vals[i]} chapa(s)">
+      <div class="bv">${vals[i] || ''}</div>
+      <div class="bar" style="height:${vals[i] / max * 130}px"></div>
+    </div>`).join('');
+  document.getElementById('blabels').innerHTML = meses.map(m =>
+    `<span class="${m === mes ? 'sel' : ''}">${MESES[Number(m.slice(5)) - 1]}</span>`).join('');
+
+  ranking('rank-tipo', 'tipo', 'sem tipo', 10);
+  ranking('rank-esp', 'espessura', 'sem espessura', 0);
+  ranking('rank-cli', 'cliente', 'sem cliente/projeto', 10);
 }
 
 carregar();
